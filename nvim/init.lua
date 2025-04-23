@@ -412,7 +412,6 @@ _G.TermFloatingCmd = function(cmd)
 
   vim.fn.termopen(cmd)
   vim.bo[buf].buftype = "terminal"
-  vim.cmd.colorscheme("base16-primer-dark")
   vim.cmd("startinsert")
 
   vim.api.nvim_create_autocmd("TermClose", {
