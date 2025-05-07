@@ -262,34 +262,41 @@ require("lazy").setup({
           capabilities, 
           require('cmp_nvim_lsp').default_capabilities()
         )
-        
-        local lspconfig = require("lspconfig")
+
         local mason_lspconfig = require("mason-lspconfig")
-        for _, server_name in ipairs(mason_lspconfig.get_installed_servers()) do
-          lspconfig[server_name].setup({
+        for _, server in ipairs(mason_lspconfig.get_installed_servers()) do
+          vim.lsp.config(server, {
             capabilities = capabilities,
           })
         end
-
-        lspconfig.gleam.setup({})
+        require('lspconfig').gleam.setup({})
 
         vim.opt.signcolumn = "yes"
-        local signs = { ERROR = "", WARN = "", INFO = "", HINT = "" }
+        local signs = { Error = "", Warn = "", Info = "", Hint = "" }
         for type, icon in pairs(signs) do
-          local hl = "DiagnosticSign" .. type:sub(1, 1) .. type:sub(2):lower()
+          local hl = "DiagnosticSign" .. type
           vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
         end
-        vim.diagnostic.config({ 
+
+        vim.diagnostic.config({
           virtual_text = {
-            prefix = ""
+            prefix = "",
+            spacing = 2,
           },
           float = {
             max_width = 80,
-            wrap = true
+            wrap = true,
+            source = "always",
+            border = "rounded"
           },
-          signs = true,
+          signs = {
+            severity = {
+              min = vim.diagnostic.severity.HINT,
+            },
+          },
+          underline = true,
+          update_in_insert = false,
         })
-        vim.diagnostic.enable() 
 
         vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(
           vim.lsp.handlers.hover, {
