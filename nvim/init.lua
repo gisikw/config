@@ -44,7 +44,7 @@ vim.keymap.set('n','<space>', function()
 end)
 
 vim.keymap.set('n', '<leader>d', ':NvimTreeToggle<cr>')
-vim.keymap.set('n', '<leader><leader>', '<cmd>b#<cr>')
+vim.keymap.set('n', '<leader><leader>', '<C-w>w')
 vim.keymap.set('n', '<leader>-', ':bd<cr>')
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float)
 vim.keymap.set("n", "<leader>v", function()
@@ -264,13 +264,12 @@ require("lazy").setup({
         )
         
         local lspconfig = require("lspconfig")
-        require("mason-lspconfig").setup_handlers({
-          function(server_name)
-            lspconfig[server_name].setup({
-              capabilities = capabilities
-            }) 
-          end,
-        })
+        local mason_lspconfig = require("mason-lspconfig")
+        for _, server_name in ipairs(mason_lspconfig.get_installed_servers()) do
+          lspconfig[server_name].setup({
+            capabilities = capabilities,
+          })
+        end
 
         lspconfig.gleam.setup({})
 
