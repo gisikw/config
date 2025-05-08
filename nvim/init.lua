@@ -57,6 +57,8 @@ end, { silent = true, noremap = true, desc = "Toggle virtual text diagnostics" }
 
 -- Project-wide definition, rather than gd for local definition
 vim.api.nvim_set_keymap('n', 'gp', '<cmd>lua vim.lsp.buf.definition()<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<leader>c', '<cmd>lua vim.lsp.buf.code_action()<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('v', '<leader>c', '<cmd>lua vim.lsp.buf.range_code_action()<CR>', { noremap = true, silent = true })
 
 -------------------------------------------------------------------------------
 -- USE UNDO TEMPFILES
