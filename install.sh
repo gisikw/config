@@ -2,7 +2,7 @@
 
 set -e
 
-REPO_URL="https://github.com/$GITHUB_USER/config.git"
+REPO_URL="git@github.com:$GITHUB_USER/config.git"
 CONFIG_DIR="$HOME/.config"
 ENV_SOURCE='[ -f "$HOME/.config/env.sh" ] && source "$HOME/.config/env.sh"'
 
