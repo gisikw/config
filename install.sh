@@ -33,7 +33,7 @@ else
 fi
 
 if [ "$CLONED" -eq 1 ]; then
-  for file in "$HOME/.zshrc" "$HOME/.bashrc"; do
+  for file in "$HOME/.zshrc" "$HOME/.zprofile" "$HOME/.bashrc"; do
     if [ -f "$file" ]; then
       if ! grep -Fxq "$ENV_SOURCE" "$file"; then
         echo "Patching $file..."
