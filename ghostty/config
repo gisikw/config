@@ -4,3 +4,6 @@ theme = "Monokai Pro Spectrum"
 
 # Bind alt/opt+backspace to wordwise backspace
 keybind = alt+backspace=text:\x17
+
+macos-titlebar-style = hidden
+mouse-hide-while-typing = true
