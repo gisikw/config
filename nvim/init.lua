@@ -6,7 +6,6 @@ vim.opt.relativenumber = true
 vim.opt.scrolloff = 10
 vim.opt.updatetime = 250
 
-
 vim.opt.expandtab = true
 vim.opt.autoindent = true
 vim.opt.smartindent = true
@@ -42,6 +41,12 @@ vim.keymap.set('n','<space>', function()
   vim.cmd('noh')
   vim.cmd('echon ""')
 end)
+
+-- System clipboard interop bindings
+vim.keymap.set({ 'n', 'v' }, '<leader>y', '"+y')
+vim.keymap.set('n', '<leader>p', ':put +<cr>')
+vim.keymap.set('n', '<leader>P', ':put! +<cr>')
+vim.keymap.set('v', '<leader>p', '"_d"+P')
 
 vim.keymap.set('n', '<leader>d', ':NvimTreeToggle<cr>')
 vim.keymap.set('n', '<leader><leader>', '<C-w>w')
