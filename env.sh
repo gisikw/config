@@ -1,6 +1,20 @@
-export EDITOR=vim
+export EDITOR=nvim
+
 config() {
   git --git-dir="$HOME/.config/.git" --work-tree="$HOME/.config" "${@:-status}"
+}
+
+skyhook() {
+  local host="kevingisi.com"
+  local port="8675"
+  local password
+  password=$(openssl rand -base64 24)
+
+  >&2 echo "On the sending machine, append the following: "
+  >&2 echo " | openssl enc -aes-256-cbc -salt -pbkdf2 -pass pass:'$password' > /dev/tcp/$host/$port"
+  >&2 echo ""
+
+  ssh $host "trap 'kill 0' EXIT; exec nc -l -p '$port' -q 1" | openssl enc -d -aes-256-cbc -salt -pbkdf2 -pass pass:"$password"
 }
 
 function get_named_color() {
