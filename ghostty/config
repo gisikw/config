@@ -5,8 +5,27 @@ theme = "Monokai Pro Spectrum"
 # Bind alt/opt+backspace to wordwise backspace
 keybind = alt+backspace=text:\x17
 
-macos-titlebar-style = hidden
+macos-titlebar-style = tabs
 mouse-hide-while-typing = true
 
 window-padding-x = 12
 window-padding-y = 12
+
+# Terminal Multiplexing
+keybind = ctrl+b>h=goto_split:left
+keybind = ctrl+b>j=goto_split:down
+keybind = ctrl+b>k=goto_split:up
+keybind = ctrl+b>l=goto_split:right
+keybind = ctrl+b>`=toggle_split_zoom
+
+keybind = ctrl+b>shift+backslash=new_split:right
+keybind = ctrl+b>-=new_split:down
+
+keybind = ctrl+b>n=next_tab
+keybind = ctrl+b>p=previous_tab
+keybind = ctrl+b>c=new_tab
+
+keybind = ctrl+b>r=reload_config
+
+# Session Management
+shell-integration-features = no-title
