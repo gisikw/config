@@ -234,6 +234,9 @@ require("lazy").setup({
               quit_on_open = true
             }
           },
+          git = {
+            ignore = false
+          },
           diagnostics = {
             enable = true,
             show_on_dirs = true,
