@@ -106,3 +106,8 @@ if [[ $ZSH_NAME ]]; then
 else
   PROMPT_COMMAND=status_prompt
 fi
+
+# Not everybody has terminfo support for ghostty yet
+if [[ "$TERM_PROGRAM" == "ghostty" ]]; then
+    export TERM=xterm-256color
+fi
