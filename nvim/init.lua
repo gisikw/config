@@ -22,6 +22,12 @@ vim.opt.splitbelow = true
 vim.opt.mouse = ""
 vim.opt.ttimeoutlen = 10
 
+vim.opt.autoread = true
+vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter" }, {
+  pattern = "*",
+  command = "checktime",
+})
+
 -------------------------------------------------------------------------------
 -- KEYBINDINGS
 -------------------------------------------------------------------------------
