@@ -297,7 +297,7 @@ require("lazy").setup({
             capabilities = capabilities,
           })
         end
-        require('lspconfig').gleam.setup({})
+        vim.lsp.enable('gleam')
 
         vim.opt.signcolumn = "yes"
         local signs = { Error = "", Warn = "", Info = "", Hint = "" }
