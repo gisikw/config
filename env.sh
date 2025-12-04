@@ -24,7 +24,7 @@ skydive() {
   password=$(openssl rand -base64 24)
 
   >&2 echo "On the receiving machine, run the following: "
-  >&2 echo "cat < /dev/tcp/$host/$port | openssl enc -d -aes-256-cbc -salt -pbkdf2 -pass pass:'$password' >"
+  >&2 echo "cat < /dev/tcp/$host/$port | openssl enc -d -aes-256-cbc -salt -pbkdf2 -pass pass:'$password'"
   >&2 echo ""
 
   openssl enc -aes-256-cbc -salt -pbkdf2 -pass pass:"$password" | ssh $host "trap 'kill 0' EXIT; exec nc -l -p '$port' -q 1"
