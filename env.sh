@@ -69,50 +69,6 @@ function status_prompt() {
   PROMPT="%K{$STATUS}%F{black} $CONTEXT %F{$STATUS}%k${NEWLINE}%F{$STATUS}${JOBS_SEGMENT}❯%f "
 }
 
-function find_justfile() {
-  dir="$PWD"
-  while [ "$dir" != "/" ]; do
-    if [ -f "$dir/justfile" ]; then
-      echo "$dir/justfile"
-      return 0
-    elif [ -f "$dir/Justfile" ]; then
-      echo "$dir/Justfile"
-      return 0
-    fi
-    dir="$(dirname "$dir")"
-  done
-  return 1
-}
-
-just() {
-  if [[ " $* " == *" -l "* ]]; then
-    base_justfile="$(find_justfile)"
-    tmpfile="$(mktemp)"
-
-    [[ -n "$base_justfile" ]] && cat "$base_justfile" >> "$tmpfile"
-    [[ -f ./local.just ]] && cat ./local.just >> "$tmpfile"
-
-    if [ ! -s "$tmpfile" ]; then
-      printf "\033[1m\033[31merror:\033[0m\033[1m No justfile found\033[0m\n" >&2
-      rm "$tmpfile"
-      return 1
-    fi
-
-    command just --justfile "$tmpfile" "$@"
-    rm "$tmpfile"
-  else
-    if [ -f ./local.just ]; then
-      if command just --justfile ./local.just -n "$@" >/dev/null 2>&1; then
-        command just --justfile ./local.just "$@"
-      else
-        command just "$@"
-      fi
-    else
-      command just "$@"
-    fi
-  fi
-}
-
 # Hook into prompt
 if [[ $ZSH_NAME ]]; then
   precmd() { status_prompt; }
