@@ -249,27 +249,25 @@ require("lazy").setup({
       },
       config = function()
         require("mason").setup()
-        require("mason-lspconfig").setup({
-          ensure_installed = { "rust_analyzer", "ts_ls", "ruby_lsp", "nextls", "tailwindcss" },
-        })
 
-        local capabilities = vim.lsp.protocol.make_client_capabilities()
-        capabilities = vim.tbl_deep_extend(
-          'force', 
-          capabilities, 
+        local capabilities = vim.tbl_deep_extend(
+          'force',
+          vim.lsp.protocol.make_client_capabilities(),
           require('cmp_nvim_lsp').default_capabilities()
         )
-        
-        local lspconfig = require("lspconfig")
-        require("mason-lspconfig").setup_handlers({
-          function(server_name)
-            lspconfig[server_name].setup({
-              capabilities = capabilities
-            }) 
-          end,
+
+        require("mason-lspconfig").setup({
+          ensure_installed = { "rust_analyzer", "ts_ls", "ruby_lsp", "nextls", "tailwindcss" },
+          handlers = {
+            function(server_name)
+              vim.lsp.config(server_name, { capabilities = capabilities })
+              vim.lsp.enable(server_name)
+            end,
+          },
         })
 
-        lspconfig.gleam.setup({})
+        vim.lsp.config('gleam', { capabilities = capabilities })
+        vim.lsp.enable('gleam')
 
         vim.opt.signcolumn = "yes"
         local signs = { ERROR = "", WARN = "", INFO = "", HINT = "" }
