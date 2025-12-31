@@ -72,6 +72,7 @@ in {
     keyMode = "vi";
     baseIndex = 1;
     escapeTime = 0;
+    terminal = "tmux-256color";
 
     extraConfig = baseConfig + statusAndBorders + navigation + fastRefreshHooks + keybindings + fzfSessionSwitching;
   };
