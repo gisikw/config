@@ -35,3 +35,4 @@ keybind = ctrl+g>\=toggle_quick_terminal
 
 # Session Management
 shell-integration-features = no-title
+keybind = shift+enter=text:\x1b\r

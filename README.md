@@ -1,56 +1,86 @@
 # ~/.config
 
-This is my personal configuration repository, designed to replace a traditional
-`~/.dotfiles` setup by embracing the [XDG Base Directory
-Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html).
+Personal configuration managed with [Nix Home Manager](https://github.com/nix-community/home-manager).
 
-All configuration lives inside `~/.config`, with individual tools scoped to
-their own subdirectories (e.g., `nvim/`, `tmux/`, `ghostty/`). Shared environment
-setup is handled by a single `env.sh` file that’s sourced by interactive
-shells.
+## Setup
 
----
-
-## 🛠 Installation
-
-Run the installer script to clone this repository into `~/.config` and patch your shell configuration:
+### 1. Install Nix
 
 ```bash
-sh -c 'export GITHUB_USER=gisikw; curl -fsSL https://raw.githubusercontent.com/$GITHUB_USER/config/main/install.sh | sh'
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
 ```
 
-> You can pass a different GitHub username if you've forked this repo
->
-> ```bash
-> sh -c 'export GITHUB_USER=yourname; curl -fsSL https://raw.githubusercontent.com/$GITHUB_USER/config/main/install.sh | sh'
-> ```
+This uses the [Determinate Nix Installer](https://github.com/DeterminateSystems/nix-installer), which enables flakes by default and provides a cleaner uninstall path than the official installer.
 
-This will:
+### 2. Clone this repo
 
-- Clone the repo into `~/.config` (if safe to do so)
-- Patch your `~/.bashrc` and/or `~/.zshrc` to source the shared environment
-- Refuse to overwrite existing content unless it matches the expected repo
-
----
-
-## 🧩 Shell Integration
-
-To bring in shared environment variables and functions (like `EDITOR`, `PATH`,
-and utility helpers), source `env.sh` from your shell config:
-
-### In `~/.bashrc` or `~/.zshrc`:
+The repo can live anywhere, but `~/.config` keeps things tidy and lets the `config` shell alias work out of the box:
 
 ```bash
-[ -f "$HOME/.config/env.sh" ] && source "$HOME/.config/env.sh"
+git clone git@github.com:gisikw/config.git ~/.config
 ```
 
-By default this includes a small `config` alias that lets you view the git
-status of your config files at a glance.
+### 3. Apply the configuration
 
----
+```bash
+nix run home-manager -- switch --flake ~/.config#gisikw@macbook
+```
 
-## 🧱 Philosophy
+This bootstraps home-manager and applies the configuration in one step. After the first run, `home-manager` will be in your PATH:
 
-- Organized under `~/.config` to align with modern tool conventions
-- Easy to reason about: no alias tricks, no hidden indirection
-- Portable across shells and machines with minimal setup
+```bash
+home-manager switch --flake ~/.config#gisikw@macbook
+```
+
+## Available configurations
+
+| Name | System | Description |
+|------|--------|-------------|
+| `gisikw@macbook` | aarch64-darwin | Personal MacBook |
+| `gisikw@calendly` | aarch64-darwin | Work MacBook |
+| `dev@ratched` | x86_64-linux | Homelab dev sandbox |
+
+## Using as a flake input
+
+From another flake (e.g., a NixOS configuration):
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
+    home-manager.url = "github:nix-community/home-manager";
+    dotfiles.url = "github:gisikw/config";
+  };
+
+  outputs = { nixpkgs, home-manager, dotfiles, ... }: {
+    nixosConfigurations.myhost = nixpkgs.lib.nixosSystem {
+      # ...
+      modules = [
+        home-manager.nixosModules.home-manager
+        {
+          home-manager.users.dev = {
+            imports = [ dotfiles.homeManagerModules.default ];
+          };
+        }
+      ];
+    };
+  };
+}
+```
+
+## What's included
+
+- **Git** - Aliases: `co` (checkout), `up` (push current branch), `down` (pull current branch)
+- **Tmux** - Prefix `C-a`, vi mode, FZF session switching, monokai-inspired status bar
+- **Neovim** - Full Lua config with lazy.nvim, LSP, Treesitter, Telescope
+- **Zsh** - Custom prompt with git status, `config` helper, `skyhook`/`skydive` data transfer utils
+- **Ghostty** - Terminal configuration
+- **Sway** - Wayland window manager (Linux only)
+
+## Shell utilities
+
+After applying the configuration:
+
+- `config` - Shorthand for git operations on this repo (`config status`, `config add .`, etc.)
+- `skyhook` - Receive encrypted data via SSH tunnel
+- `skydive` - Send encrypted data via SSH tunnel
