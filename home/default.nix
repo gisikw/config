@@ -4,11 +4,11 @@
   imports = [
     ./git.nix
     ./tmux.nix
-    ./neovim.nix
+    ./neovim
     ./shell.nix
-    ./ghostty.nix
+    ./ghostty
   ] ++ lib.optionals isLinux [
-    ./linux.nix
+    ./sway.nix
   ] ++ lib.optionals isDarwin [
     ./darwin.nix
   ];
