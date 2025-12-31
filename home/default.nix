@@ -8,7 +8,7 @@
     ./shell.nix
     ./ghostty
   ] ++ lib.optionals isLinux [
-    ./sway.nix
+    ./sway
   ] ++ lib.optionals isDarwin [
     ./darwin.nix
   ];
