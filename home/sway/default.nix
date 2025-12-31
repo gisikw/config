@@ -1,5 +1,5 @@
 { ... }:
 
 {
-  xdg.configFile."sway/config".source = ../sway/config;
+  xdg.configFile."sway/config".source = ./config;
 }

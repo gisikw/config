@@ -1,5 +1,5 @@
 { ... }:
 
 {
-  xdg.configFile."ghostty/config".source = ../ghostty/config;
+  xdg.configFile."ghostty/config".source = ./config;
 }
