@@ -2,6 +2,9 @@ StardewValley
 nvim/lazy-lock.json
 result
 .hm-profile
-nvim
-ghostty
-sway
+/nvim
+/ghostty
+/sway
+/tmux
+/nix
+/git
