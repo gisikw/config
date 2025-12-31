@@ -4,7 +4,20 @@ let
   shellInit = ''
     # Config helper function
     config() {
-      git --git-dir="$HOME/.config/.git" --work-tree="$HOME/.config" "''${@:-status}"
+      case "$1" in
+        switch)
+          shift
+          local profile_file="$HOME/.config/.hm-profile"
+          if [[ ! -f "$profile_file" ]]; then
+            echo "No profile set. Run: echo 'user@host' > $profile_file"
+            return 1
+          fi
+          home-manager switch --flake "$HOME/.config#$(cat "$profile_file")" "$@"
+          ;;
+        *)
+          git --git-dir="$HOME/.config/.git" --work-tree="$HOME/.config" "''${@:-status}"
+          ;;
+      esac
     }
 
     # Data transfer utilities
