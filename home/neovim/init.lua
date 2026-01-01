@@ -6,7 +6,6 @@ vim.opt.relativenumber = true
 vim.opt.scrolloff = 10
 vim.opt.updatetime = 250
 
-
 vim.opt.expandtab = true
 vim.opt.autoindent = true
 vim.opt.smartindent = true
@@ -22,6 +21,12 @@ vim.opt.splitbelow = true
 
 vim.opt.mouse = ""
 vim.opt.ttimeoutlen = 10
+
+vim.opt.autoread = true
+vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter" }, {
+  pattern = "*",
+  command = "checktime",
+})
 
 -------------------------------------------------------------------------------
 -- KEYBINDINGS
@@ -43,8 +48,14 @@ vim.keymap.set('n','<space>', function()
   vim.cmd('echon ""')
 end)
 
+-- System clipboard interop bindings
+vim.keymap.set({ 'n', 'v' }, '<leader>y', '"+y')
+vim.keymap.set('n', '<leader>p', ':put +<cr>')
+vim.keymap.set('n', '<leader>P', ':put! +<cr>')
+vim.keymap.set('v', '<leader>p', '"_d"+P')
+
 vim.keymap.set('n', '<leader>d', ':NvimTreeToggle<cr>')
-vim.keymap.set('n', '<leader><leader>', '<cmd>b#<cr>')
+vim.keymap.set('n', '<leader><leader>', '<C-w>w')
 vim.keymap.set('n', '<leader>-', ':bd<cr>')
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float)
 vim.keymap.set("n", "<leader>v", function()
@@ -54,6 +65,11 @@ vim.keymap.set("n", "<leader>v", function()
   })
   vim.diagnostic.config(new)
 end, { silent = true, noremap = true, desc = "Toggle virtual text diagnostics" })
+
+-- Project-wide definition, rather than gd for local definition
+vim.api.nvim_set_keymap('n', 'gp', '<cmd>lua vim.lsp.buf.definition()<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<leader>c', '<cmd>lua vim.lsp.buf.code_action()<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('v', '<leader>c', '<cmd>lua vim.lsp.buf.range_code_action()<CR>', { noremap = true, silent = true })
 
 -------------------------------------------------------------------------------
 -- USE UNDO TEMPFILES
@@ -137,7 +153,19 @@ require("lazy").setup({
         }
         local builtin = require("telescope.builtin")
         vim.keymap.set("n", "<leader>t", builtin.find_files)
-        vim.keymap.set("n", "<leader>a", builtin.live_grep)
+        vim.keymap.set("n", "<leader>T", function()
+          builtin.find_files({
+            no_ignore = true,
+            hidden = true
+          })
+        end)
+        vim.keymap.set("n", "<leader>a", function()
+          builtin.live_grep({
+            additional_args = { "--files-with-matches" }
+          })
+        end)
+        vim.keymap.set("n", "<leader>A", builtin.live_grep)
+        vim.keymap.set("n", "<leader>b", builtin.buffers)
       end
     },
     {
@@ -212,6 +240,9 @@ require("lazy").setup({
               quit_on_open = true
             }
           },
+          git = {
+            ignore = false
+          },
           diagnostics = {
             enable = true,
             show_on_dirs = true,
@@ -249,43 +280,51 @@ require("lazy").setup({
       },
       config = function()
         require("mason").setup()
+        require("mason-lspconfig").setup({
+          ensure_installed = { "rust_analyzer", "ts_ls", "nextls", "tailwindcss" },
+        })
 
-        local capabilities = vim.tbl_deep_extend(
-          'force',
-          vim.lsp.protocol.make_client_capabilities(),
+        local capabilities = vim.lsp.protocol.make_client_capabilities()
+        capabilities = vim.tbl_deep_extend(
+          'force', 
+          capabilities, 
           require('cmp_nvim_lsp').default_capabilities()
         )
 
-        require("mason-lspconfig").setup({
-          ensure_installed = { "rust_analyzer", "ts_ls", "ruby_lsp", "nextls", "tailwindcss" },
-          handlers = {
-            function(server_name)
-              vim.lsp.config(server_name, { capabilities = capabilities })
-              vim.lsp.enable(server_name)
-            end,
-          },
-        })
-
-        vim.lsp.config('gleam', { capabilities = capabilities })
+        local mason_lspconfig = require("mason-lspconfig")
+        for _, server in ipairs(mason_lspconfig.get_installed_servers()) do
+          vim.lsp.config(server, {
+            capabilities = capabilities,
+          })
+        end
         vim.lsp.enable('gleam')
 
         vim.opt.signcolumn = "yes"
-        local signs = { ERROR = "", WARN = "", INFO = "", HINT = "" }
+        local signs = { Error = "", Warn = "", Info = "", Hint = "" }
         for type, icon in pairs(signs) do
-          local hl = "DiagnosticSign" .. type:sub(1, 1) .. type:sub(2):lower()
+          local hl = "DiagnosticSign" .. type
           vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
         end
-        vim.diagnostic.config({ 
+
+        vim.diagnostic.config({
           virtual_text = {
-            prefix = ""
+            prefix = "",
+            spacing = 2,
           },
           float = {
             max_width = 80,
-            wrap = true
+            wrap = true,
+            source = "always",
+            border = "rounded"
           },
-          signs = true,
+          signs = {
+            severity = {
+              min = vim.diagnostic.severity.HINT,
+            },
+          },
+          underline = true,
+          update_in_insert = false,
         })
-        vim.diagnostic.enable() 
 
         vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(
           vim.lsp.handlers.hover, {
@@ -407,7 +446,6 @@ _G.TermFloatingCmd = function(cmd)
 
   vim.fn.termopen(cmd)
   vim.bo[buf].buftype = "terminal"
-  vim.cmd.colorscheme("base16-primer-dark")
   vim.cmd("startinsert")
 
   vim.api.nvim_create_autocmd("TermClose", {

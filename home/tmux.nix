@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, isDarwin ? false, ... }:
 
 let
   baseConfig = ''
@@ -73,6 +73,15 @@ in {
     baseIndex = 1;
     escapeTime = 0;
     terminal = "tmux-256color";
+
+    # On Darwin, use homebrew's tmux (nix tmux has PTY issues)
+    # This creates a dummy package that doesn't install anything
+    package = lib.mkIf isDarwin (pkgs.runCommand "tmux-homebrew" {} ''
+      mkdir -p $out/bin
+      echo '#!/bin/sh' > $out/bin/tmux
+      echo 'exec /opt/homebrew/bin/tmux "$@"' >> $out/bin/tmux
+      chmod +x $out/bin/tmux
+    '');
 
     extraConfig = baseConfig + statusAndBorders + navigation + fastRefreshHooks + keybindings + fzfSessionSwitching;
   };
