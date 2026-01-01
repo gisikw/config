@@ -259,16 +259,12 @@ require("lazy").setup({
     {
       'nvim-treesitter/nvim-treesitter',
       build = ':TSUpdate',
-      main = 'nvim-treesitter.configs',
-      opts = {
-        ensure_installed = { 'lua' },
-        auto_install = true,
-        highlight = {
-          enable = true,
-          additional_vim_regex_highlighting = { 'ruby' },
-        },
-        indent = { enable = true, disable = { 'ruby' } },
-      },
+      config = function()
+        require('nvim-treesitter').setup({
+          ensure_installed = { 'lua' },
+          auto_install = true,
+        })
+      end,
     },
     {
       'neovim/nvim-lspconfig',
