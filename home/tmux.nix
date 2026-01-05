@@ -65,6 +65,13 @@ let
     "
   '';
 
+  # Host switching: { prev host, } next host
+  # Works with tm wrapper - exit codes signal navigation
+  hostSwitching = ''
+    bind-key "}" detach-client -E "exit 10"
+    bind-key "{" detach-client -E "exit 11"
+  '';
+
 in {
   programs.tmux = {
     enable = true;
@@ -83,6 +90,6 @@ in {
       chmod +x $out/bin/tmux
     '');
 
-    extraConfig = baseConfig + statusAndBorders + navigation + fastRefreshHooks + keybindings + fzfSessionSwitching;
+    extraConfig = baseConfig + statusAndBorders + navigation + fastRefreshHooks + keybindings + fzfSessionSwitching + hostSwitching;
   };
 }

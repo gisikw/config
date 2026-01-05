@@ -98,6 +98,12 @@ let
     if [[ "$TERM_PROGRAM" == "ghostty" ]]; then
         export TERM=xterm-256color
     fi
+
+    # Use tm wrapper for tmux on local sessions only
+    # On remote (SSH) sessions, use raw tmux so { } bindings work with exit codes
+    if [[ -z "$SSH_CONNECTION" ]]; then
+      alias tmux=tm
+    fi
   '';
 in {
   programs.zsh = {

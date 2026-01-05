@@ -21,6 +21,11 @@
     tldr
   ];
 
+  home.file.".local/bin/tm" = {
+    source = ./scripts/tm;
+    executable = true;
+  };
+
   nix = {
     package = lib.mkDefault pkgs.nix;
     settings.experimental-features = [ "nix-command" "flakes" ];

@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+HOSTS_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/tmux-hosts"
+
+# Exit codes for host navigation (set by tmux { and } bindings)
+# 10 = next host
+# 11 = prev host
+# 0 = quit
+# Other = skip (no session or connection failed)
+
+# Read remote hosts (local is implicit at index -1)
+HOSTS=()
+if [[ -f "$HOSTS_FILE" ]]; then
+  mapfile -t HOSTS < "$HOSTS_FILE"
+fi
+
+HOST_COUNT=${#HOSTS[@]}
+
+# -1 = local, 0..n = remotes
+current_idx=-1
+
+# Track consecutive skips to avoid infinite loops
+skipped=0
+max_skips=$((HOST_COUNT + 1))
+
+run_local() {
+  tmux "$@"
+}
+
+run_remote() {
+  local host="$1"
+  shift
+  # On remote, try to attach (don't auto-create sessions)
+  ssh -t "$host" "tmux attach" 2>/dev/null
+}
+
+next_idx() {
+  local idx=$1
+  if [[ $idx -ge $((HOST_COUNT - 1)) ]]; then
+    echo -1  # wrap to local
+  else
+    echo $((idx + 1))
+  fi
+}
+
+prev_idx() {
+  local idx=$1
+  if [[ $idx -le -1 ]]; then
+    echo $((HOST_COUNT - 1))  # wrap to last remote
+  else
+    echo $((idx - 1))
+  fi
+}
+
+while true; do
+  if [[ $current_idx -eq -1 ]]; then
+    echo "Connecting to: local"
+    run_local "$@"
+    exit_code=$?
+  else
+    host="${HOSTS[$current_idx]}"
+    echo "Connecting to: $host"
+    run_remote "$host"
+    exit_code=$?
+  fi
+
+  case $exit_code in
+    0)
+      # Normal exit - quit wrapper
+      break
+      ;;
+    10)
+      # Next host
+      skipped=0
+      current_idx=$(next_idx $current_idx)
+      ;;
+    11)
+      # Prev host
+      skipped=0
+      current_idx=$(prev_idx $current_idx)
+      ;;
+    *)
+      # Skip - connection failed or no session
+      skipped=$((skipped + 1))
+      if [[ $skipped -ge $max_skips ]]; then
+        echo "All hosts skipped (no sessions or unreachable)"
+        break
+      fi
+      if [[ $current_idx -eq -1 ]]; then
+        echo "Local tmux exited ($exit_code), trying next..."
+      else
+        echo "Skipping ${HOSTS[$current_idx]} (exit $exit_code), trying next..."
+      fi
+      current_idx=$(next_idx $current_idx)
+      ;;
+  esac
+done
