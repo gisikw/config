@@ -72,6 +72,21 @@ let
     bind-key "{" detach-client -E "exit 11"
   '';
 
+  # PageUp/PageDown navigation - auto-enter copy mode
+  # -u: scroll up one page on entry
+  pageNavigation = ''
+    bind-key -n PPage copy-mode -u
+    bind-key -n NPage run ""
+    bind-key -T copy-mode-vi NPage send-keys -X page-down \; if-shell -F "#{==:#{scroll_position},0}" "send-keys -X cancel" ""
+  '';
+
+  # Copy mode styling to match theme
+  copyModeStyle = ''
+    set -g mode-style bg=#7cd5f1,fg=#1d2528
+    set -g copy-mode-match-style bg=#3a4449,fg=#7cd5f1
+    set -g copy-mode-current-match-style bg=#7cd5f1,fg=#1d2528
+  '';
+
 in {
   programs.tmux = {
     enable = true;
@@ -90,6 +105,6 @@ in {
       chmod +x $out/bin/tmux
     '');
 
-    extraConfig = baseConfig + statusAndBorders + navigation + fastRefreshHooks + keybindings + fzfSessionSwitching + hostSwitching;
+    extraConfig = baseConfig + statusAndBorders + navigation + fastRefreshHooks + keybindings + fzfSessionSwitching + hostSwitching + pageNavigation + copyModeStyle;
   };
 }
