@@ -261,7 +261,7 @@ require("lazy").setup({
       build = ':TSUpdate',
       config = function()
         require('nvim-treesitter').setup({
-          ensure_installed = { 'lua' },
+          ensure_installed = { 'lua', 'elixir' },
           auto_install = true,
         })
       end,
@@ -410,6 +410,12 @@ require("lazy").setup({
 vim.api.nvim_create_autocmd("VimEnter", {
   callback = function()
     require("lazy").update({ show = false })
+  end,
+})
+
+vim.api.nvim_create_autocmd('FileType', {
+  callback = function()
+    pcall(vim.treesitter.start)
   end,
 })
 
