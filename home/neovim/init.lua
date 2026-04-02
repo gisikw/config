@@ -397,6 +397,7 @@ require("lazy").setup({
         vim.api.nvim_set_hl(0, "IndentLineCurrent", { ctermfg = 252, ctermbg = "NONE", fg = "#b8c4c3", bg = "NONE" })
       end,
     },
+    { "lewis6991/gitsigns.nvim", opts = {} },
   },
   checker = { 
     enabled = true,
