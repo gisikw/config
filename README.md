@@ -87,7 +87,17 @@ From another flake (e.g., a NixOS configuration):
 - **Neovim** - Full Lua config with lazy.nvim, LSP, Treesitter, Telescope
 - **Zsh** - Custom prompt with git status, `config switch` helper, `skyhook`/`skydive` data transfer utils
 - **Herdr** - Terminal agent multiplexer ([herdr.dev](https://herdr.dev)), via its upstream flake
+- **Agent CLIs** - `claude`, `codex`, `opencode`, `pi`, plus `ccusage` for usage
+  reporting across all four; pulled from nixpkgs-unstable so `nix flake update`
+  tracks their release pace
 - **Ghostty** - Terminal configuration
+- **Rectangle** (macOS) - window manager with SizeUp's keybindings (halves
+  ⌃⌥⌘-arrows, quarters ⌃⌥⇧-arrows, full screen ⌃⌥⌘M, monitors ⌃⌥-arrows),
+  configured declaratively; the app ships from the upstream signed .dmg so
+  the Accessibility grant survives updates
+- **Peck** (macOS) - push-to-toggle dictation in the menu bar: the Home key
+  starts/stops recording, NVIDIA Parakeet transcribes locally (MLX, streaming
+  in 1s chunks while you talk), and the text is typed into the focused app
 - **Sway** - Wayland window manager (Linux only)
 
 ## Shell utilities

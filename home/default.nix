@@ -11,6 +11,8 @@
     ./sway
   ] ++ lib.optionals isDarwin [
     ./darwin.nix
+    ./rectangle
+    ./peck
   ];
 
   home.stateVersion = "26.05";
