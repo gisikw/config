@@ -1,4 +1,4 @@
-{ pkgs, lib, isDarwin ? false, ... }:
+{ pkgs, ... }:
 
 let
   baseConfig = ''
@@ -65,13 +65,6 @@ let
     "
   '';
 
-  # Host switching: { prev host, } next host
-  # Works with tm wrapper - exit codes signal navigation
-  hostSwitching = ''
-    bind-key "}" detach-client -E "exit 10"
-    bind-key "{" detach-client -E "exit 11"
-  '';
-
   # PageUp/PageDown navigation - auto-enter copy mode
   # -u: scroll up one page on entry
   pageNavigation = ''
@@ -96,15 +89,6 @@ in {
     escapeTime = 0;
     terminal = "tmux-256color";
 
-    # On Darwin, use homebrew's tmux (nix tmux has PTY issues)
-    # This creates a dummy package that doesn't install anything
-    package = lib.mkIf isDarwin (pkgs.runCommand "tmux-homebrew" {} ''
-      mkdir -p $out/bin
-      echo '#!/bin/sh' > $out/bin/tmux
-      echo 'exec /opt/homebrew/bin/tmux "$@"' >> $out/bin/tmux
-      chmod +x $out/bin/tmux
-    '');
-
-    extraConfig = baseConfig + statusAndBorders + navigation + fastRefreshHooks + keybindings + fzfSessionSwitching + hostSwitching + pageNavigation + copyModeStyle;
+    extraConfig = baseConfig + statusAndBorders + navigation + fastRefreshHooks + keybindings + fzfSessionSwitching + pageNavigation + copyModeStyle;
   };
 }

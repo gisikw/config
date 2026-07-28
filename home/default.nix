@@ -5,7 +5,7 @@
     ./git.nix
     ./tmux.nix
     ./neovim
-    ./shell.nix
+    ./zsh
     ./ghostty
   ] ++ lib.optionals isLinux [
     ./sway
@@ -13,20 +13,19 @@
     ./darwin.nix
   ];
 
-  home.stateVersion = "25.11";
+  home.stateVersion = "26.05";
 
   home.packages = with pkgs; [
+    fd
     fzf
     ripgrep
     tldr
   ];
 
-  home.file.".local/bin/tm" = {
-    source = ./scripts/tm;
-    executable = true;
-  };
-
-  nix = {
+  # On Linux, home-manager provides nix and enables flakes at the user level.
+  # On macOS, Determinate Nix owns the installation (and already enables
+  # flakes); installing pkgs.nix there would shadow it with an older binary.
+  nix = lib.mkIf isLinux {
     package = lib.mkDefault pkgs.nix;
     settings.experimental-features = [ "nix-command" "flakes" ];
   };

@@ -1,43 +1,55 @@
-# ~/.config
+# config
 
 Personal configuration managed with [Nix Home Manager](https://github.com/nix-community/home-manager).
 
-## Setup
+## Layout
 
-### 1. Install Nix
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+```
+flake.nix    # inputs + one homeConfiguration per machine
+hosts/       # per-machine modules (git identity, quirks); keyed "user@hostname"
+home/        # shared modules: git, tmux, neovim, zsh, ghostty, sway (Linux)
+home/zsh/    # zsh module; shell code lives in real .zsh files, not nix strings
 ```
 
-This uses the [Determinate Nix Installer](https://github.com/DeterminateSystems/nix-installer), which enables flakes by default and provides a cleaner uninstall path than the official installer.
+Packages that come from flake inputs (e.g. herdr) are added in `flake.nix`
+itself, so `homeManagerModules.default` stays consumable from other flakes.
 
-### 2. Clone this repo
+Host entries are named `user@hostname` so `home-manager` (and the `config
+switch` helper) can resolve the right configuration from the environment —
+no profile sidecar file.
 
-The repo can live anywhere, but `~/.config` keeps things tidy and lets the `config` shell alias work out of the box:
+## Bootstrap a new machine
 
-```bash
-git clone git@github.com:gisikw/config.git ~/.config
-```
+1. **Install Nix** via the [Determinate Nix Installer](https://github.com/DeterminateSystems/nix-installer)
+   (flakes enabled by default, clean uninstall path):
 
-### 3. Apply the configuration
+   ```bash
+   curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+   ```
 
-```bash
-nix run home-manager -- switch --flake ~/.config#gisikw@macbook
-```
+2. **Clone this repo** (nix can provide git before the system has it):
 
-This bootstraps home-manager and applies the configuration in one step. After the first run, `home-manager` will be in your PATH:
+   ```bash
+   nix shell nixpkgs#git -c git clone git@github.com:gisikw/config.git ~/Projects/config
+   ```
 
-```bash
-home-manager switch --flake ~/.config#gisikw@macbook
-```
+3. **Add the machine** as a `hosts/` module and a `user@hostname` entry in
+   `flake.nix` (skip if it already exists), then apply:
 
-## Available configurations
+   ```bash
+   nix run github:nix-community/home-manager/release-26.05 -- \
+     switch -b hm-bak --flake ~/Projects/config#user@hostname
+   ```
+
+   After the first run `home-manager` is on PATH and `config switch` does this
+   for you.
+
+## Machines
 
 | Name | System | Description |
 |------|--------|-------------|
+| `gisikw@asg` | aarch64-darwin | Alpine SG work laptop |
 | `gisikw@macbook` | aarch64-darwin | Personal MacBook |
-| `gisikw@calendly` | aarch64-darwin | Work MacBook |
 | `dev@ratched` | x86_64-linux | Homelab dev sandbox |
 
 ## Using as a flake input
@@ -73,7 +85,8 @@ From another flake (e.g., a NixOS configuration):
 - **Git** - Aliases: `co` (checkout), `up` (push current branch), `down` (pull current branch)
 - **Tmux** - Prefix `C-a`, vi mode, FZF session switching, monokai-inspired status bar
 - **Neovim** - Full Lua config with lazy.nvim, LSP, Treesitter, Telescope
-- **Zsh** - Custom prompt with git status, `config` helper, `skyhook`/`skydive` data transfer utils
+- **Zsh** - Custom prompt with git status, `config switch` helper, `skyhook`/`skydive` data transfer utils
+- **Herdr** - Terminal agent multiplexer ([herdr.dev](https://herdr.dev)), via its upstream flake
 - **Ghostty** - Terminal configuration
 - **Sway** - Wayland window manager (Linux only)
 
@@ -81,6 +94,6 @@ From another flake (e.g., a NixOS configuration):
 
 After applying the configuration:
 
-- `config` - Shorthand for git operations on this repo (`config status`, `config add .`, etc.)
+- `config switch [user@host]` - Apply this flake (defaults to current `user@hostname`)
 - `skyhook` - Receive encrypted data via SSH tunnel
 - `skydive` - Send encrypted data via SSH tunnel

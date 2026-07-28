@@ -1,11 +1,2 @@
-StardewValley
-nvim/lazy-lock.json
+.DS_Store
 result
-.hm-profile
-/nvim
-/ghostty
-/sway
-/tmux
-/nix
-/git
-/tmux-hosts
