@@ -83,12 +83,29 @@ in
       KeepAlive.SuccessfulExit = false;
       ProcessType = "Interactive";
       EnvironmentVariables = {
-        PECK_KEY_CODE = "115"; # Home, matching the old OpenWhispr binding
-        PECK_KEY_LABEL = "Home";
+        PECK_KEY_CODE = "79"; # kVK_F18, produced by Caps Lock via the remap below
+        PECK_KEY_LABEL = "Caps Lock";
         PECK_MOD_FLAGS = "0";
       };
       StandardOutPath = "${config.home.homeDirectory}/Library/Logs/peck.log";
       StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/peck.log";
+    };
+  };
+
+  # Remap Caps Lock (HID usage 0x39) to F18 (0x6D) so it can serve as the
+  # dictation toggle. hidutil mappings don't survive a reboot, so reapply at
+  # every login; replugging an external keyboard may still clear it until
+  # the next login.
+  launchd.agents.capslock-to-f18 = {
+    enable = true;
+    config = {
+      ProgramArguments = [
+        "/usr/bin/hidutil"
+        "property"
+        "--set"
+        ''{"UserKeyMapping":[{"HIDKeyboardModifierMappingSrc":0x700000039,"HIDKeyboardModifierMappingDst":0x70000006D}]}''
+      ];
+      RunAtLoad = true;
     };
   };
 }

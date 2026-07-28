@@ -3,9 +3,17 @@
 One global hotkey toggles recording. Audio is fed to NVIDIA Parakeet
 (via parakeet-mlx) in ~1s chunks while you're still talking, so the
 transcript is already caught up when you toggle off; the final text is
-then typed into the focused app as synthetic keystrokes.
+then typed into the focused app as synthetic keystrokes. Shift+hotkey
+pauses/resumes the take without ending it; Ctrl+hotkey cancels it and
+discards everything.
 
-Menu bar states:  ... loading   [mic] idle   [red] recording   [pen] typing
+Menu bar states:  ... loading   [mic] idle   [red] recording   [pause] paused
+                  [pen] typing
+
+The dropdown also offers a toggle that prefixes every transcription with
+"[transcribed]" (persisted in ~/.local/state/peck/prefs.json) and a
+"Copy last transcription" item that puts the most recent result on the
+clipboard, in case it was typed into the wrong place.
 
 Configuration comes from the environment (set by the nix module):
   PECK_KEY_CODE   virtual keycode of the toggle key (default 115, Home)
@@ -15,6 +23,7 @@ Configuration comes from the environment (set by the nix module):
   PECK_SOUND      "0" to disable the start/stop sounds
 """
 
+import json
 import os
 import queue
 import threading
@@ -34,6 +43,8 @@ KEY_LABEL = os.environ.get("PECK_KEY_LABEL", "Home")
 MODEL = os.environ.get("PECK_MODEL", "mlx-community/parakeet-tdt-0.6b-v3")
 SOUND = os.environ.get("PECK_SOUND", "1") != "0"
 CHUNK_SECONDS = 1.0
+PREFIX = "[transcribed] "
+PREFS_PATH = os.path.expanduser("~/.local/state/peck/prefs.json")
 
 # Only these bits participate in hotkey matching; arrow/nav keys always
 # carry the fn/secondary-fn flag, so it must not be part of the comparison.
@@ -43,6 +54,26 @@ MOD_MASK = (
     | Quartz.kCGEventFlagMaskControl
     | Quartz.kCGEventFlagMaskAlternate
 )
+
+
+def load_prefs():
+    try:
+        with open(PREFS_PATH) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def save_prefs(prefs):
+    os.makedirs(os.path.dirname(PREFS_PATH), exist_ok=True)
+    with open(PREFS_PATH, "w") as f:
+        json.dump(prefs, f)
+
+
+def copy_to_clipboard(text):
+    pasteboard = AppKit.NSPasteboard.generalPasteboard()
+    pasteboard.clearContents()
+    pasteboard.setString_forType_(text, AppKit.NSPasteboardTypeString)
 
 
 def play(name):
@@ -83,12 +114,22 @@ class Peck(rumps.App):
     def __init__(self):
         super().__init__("peck", title="…")
         self.status_item = rumps.MenuItem("Loading model…")
-        self.menu = [self.status_item]
+        self.prefix_enabled = bool(load_prefs().get("prefix", False))
+        self.prefix_item = rumps.MenuItem(
+            f"Prefix with “{PREFIX.strip()}”", callback=self.toggle_prefix
+        )
+        self.prefix_item.state = self.prefix_enabled
+        # Disabled (no callback) until there is a transcription to copy.
+        self.copy_item = rumps.MenuItem("Copy last transcription")
+        self.last_text = ""
+        self.menu = [self.status_item, None, self.prefix_item, self.copy_item]
         self.state = "loading"
         self.lock = threading.Lock()
         self.model = None
         self.sample_rate = None
         self.recording = False
+        self.paused = False
+        self.discard = False
         self.audio_q = None
         self.stream = None
         self.start_signal = threading.Event()
@@ -161,14 +202,17 @@ class Peck(rumps.App):
                     duration += len(pending) / sample_rate
                     transcriber.add_audio(mx.array(pending))
                     pending = np.zeros(0, dtype=np.float32)
-            # Flush the remainder plus a little silence so trailing words
-            # clear the model's right-context window.
-            duration += len(pending) / sample_rate
-            tail = np.concatenate(
-                [pending, np.zeros(sample_rate // 2, dtype=np.float32)]
-            )
-            transcriber.add_audio(mx.array(tail))
-            text = transcriber.result.text.strip()
+            if self.discard:
+                text = ""
+            else:
+                # Flush the remainder plus a little silence so trailing words
+                # clear the model's right-context window.
+                duration += len(pending) / sample_rate
+                tail = np.concatenate(
+                    [pending, np.zeros(sample_rate // 2, dtype=np.float32)]
+                )
+                transcriber.add_audio(mx.array(tail))
+                text = transcriber.result.text.strip()
         finally:
             transcriber.__exit__(None, None, None)
 
@@ -178,8 +222,23 @@ class Peck(rumps.App):
             flush=True,
         )
         if text:
+            if self.prefix_enabled:
+                text = PREFIX + text
+            self.last_text = text
+            AppHelper.callAfter(self.copy_item.set_callback, self.copy_last)
             type_text(text)
         self.set_state("idle", "🎙", f"Idle — press {KEY_LABEL} to dictate")
+
+    # -- menu ----------------------------------------------------------------
+
+    def toggle_prefix(self, item):
+        self.prefix_enabled = not self.prefix_enabled
+        item.state = self.prefix_enabled
+        save_prefs({"prefix": self.prefix_enabled})
+
+    def copy_last(self, _item):
+        if self.last_text:
+            copy_to_clipboard(self.last_text)
 
     # -- hotkey --------------------------------------------------------------
 
@@ -203,12 +262,21 @@ class Peck(rumps.App):
                 event, Quartz.kCGKeyboardEventKeycode
             )
             flags = Quartz.CGEventGetFlags(event) & MOD_MASK
-            if keycode == KEY_CODE and flags == MOD_FLAGS:
-                if not Quartz.CGEventGetIntegerValueField(
-                    event, Quartz.kCGKeyboardEventAutorepeat
-                ):
-                    threading.Thread(target=self.toggle, daemon=True).start()
-                return None  # consume the keystroke
+            if keycode == KEY_CODE:
+                if flags == MOD_FLAGS:
+                    action = self.toggle
+                elif flags == MOD_FLAGS | Quartz.kCGEventFlagMaskShift:
+                    action = self.toggle_pause
+                elif flags == MOD_FLAGS | Quartz.kCGEventFlagMaskControl:
+                    action = self.cancel
+                else:
+                    action = None
+                if action is not None:
+                    if not Quartz.CGEventGetIntegerValueField(
+                        event, Quartz.kCGKeyboardEventAutorepeat
+                    ):
+                        threading.Thread(target=action, daemon=True).start()
+                    return None  # consume the keystroke
             return event
 
         tap = None
@@ -242,15 +310,45 @@ class Peck(rumps.App):
         with self.lock:
             if self.state == "idle":
                 self.start_recording()
-            elif self.state == "recording":
+            elif self.state in ("recording", "paused"):
                 self.stop_recording()
             # loading/transcribing: ignore the press
 
+    def toggle_pause(self):
+        with self.lock:
+            if self.state == "recording":
+                self.paused = True
+                play("Bottle")
+                self.set_state(
+                    "paused", "⏸", f"Paused — ⇧{KEY_LABEL} resumes, {KEY_LABEL} finishes"
+                )
+            elif self.state == "paused":
+                self.paused = False
+                play("Pop")
+                self.set_state(
+                    "recording", "🔴", f"Recording — press {KEY_LABEL} to finish"
+                )
+
+    def cancel(self):
+        with self.lock:
+            if self.state not in ("recording", "paused"):
+                return
+            self.discard = True
+            self.stream.stop()
+            self.stream.close()
+            self.recording = False
+            play("Basso")
+            # Blocks further presses until the engine winds down and goes idle.
+            self.set_state("transcribing", "🎙", "Discarding…")
+
     def start_recording(self):
         self.audio_q = queue.Queue()
+        self.paused = False
+        self.discard = False
 
         def on_audio(indata, _frames, _time, _status):
-            self.audio_q.put(indata[:, 0].copy())
+            if not self.paused:
+                self.audio_q.put(indata[:, 0].copy())
 
         try:
             self.stream = sd.InputStream(

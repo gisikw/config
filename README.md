@@ -102,9 +102,10 @@ From another flake (e.g., a NixOS configuration):
   ⌃⌥⌘-arrows, quarters ⌃⌥⇧-arrows, full screen ⌃⌥⌘M, monitors ⌃⌥-arrows),
   configured declaratively; the app ships from the upstream signed .dmg so
   the Accessibility grant survives updates
-- **Peck** (macOS) - push-to-toggle dictation in the menu bar: the Home key
-  starts/stops recording, NVIDIA Parakeet transcribes locally (MLX, streaming
-  in 1s chunks while you talk), and the text is typed into the focused app
+- **Peck** (macOS) - push-to-toggle dictation in the menu bar: Caps Lock
+  (remapped to F18 via hidutil) starts/stops recording (Shift pauses,
+  Ctrl cancels), NVIDIA Parakeet transcribes locally (MLX, streaming in
+  1s chunks while you talk), and the text is typed into the focused app
 - **Sway** - Wayland window manager (Linux only)
 
 ## Shell utilities
