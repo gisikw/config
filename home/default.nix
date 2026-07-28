@@ -4,6 +4,8 @@
   imports = [
     ./git.nix
     ./tmux.nix
+    ./herdr
+    ./skills
     ./neovim
     ./zsh
     ./ghostty

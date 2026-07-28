@@ -1,0 +1,28 @@
+# Keybindings and theme ported from tmux (see home/tmux.nix); herdr's
+# defaults already match the tmux config for pane focus (prefix+h/j/k/l)
+# and copy mode (vi-style, prefix+[). Resize goes through resize mode
+# (prefix+r), reload is prefix+shift+r.
+
+onboarding = false
+
+[keys]
+prefix = "ctrl+b"
+split_vertical = "prefix+|"
+split_horizontal = "prefix+minus"
+zoom = "prefix+backtick"
+# Session navigator on backslash to match the old tmux fzf popup.
+goto = ["prefix+g", "prefix+backslash"]
+# f for focus (default is prefix+b).
+toggle_sidebar = "prefix+f"
+
+[theme.custom]
+accent = "#7cd5f1"
+panel_bg = "#1d2528"
+surface0 = "#3a4449"
+surface1 = "#3a4449"
+# Sidebar divider, inactive pane borders, scrollbar track, and sidebar
+# selection background. The divider turns accent-colored in navigate mode.
+surface_dim = "#3a4449"
+
+[ui]
+agent_panel_sort = "spaces"

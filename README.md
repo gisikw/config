@@ -86,7 +86,14 @@ From another flake (e.g., a NixOS configuration):
 - **Tmux** - Prefix `C-a`, vi mode, FZF session switching, monokai-inspired status bar
 - **Neovim** - Full Lua config with lazy.nvim, LSP, Treesitter, Telescope
 - **Zsh** - Custom prompt with git status, `config switch` helper, `skyhook`/`skydive` data transfer utils
-- **Herdr** - Terminal agent multiplexer ([herdr.dev](https://herdr.dev)), via its upstream flake
+- **Herdr** - Terminal agent multiplexer ([herdr.dev](https://herdr.dev)), via
+  its upstream flake; config ported from the tmux setup (splits, zoom, session
+  navigator, theme)
+- **Skills** - agent skills fetched straight from their source repos, pinned by
+  rev + content hash (the [allium](https://github.com/juxt/allium) suite with
+  its CLI built from source, Anthropic's frontend-design), linked into
+  `~/.claude/skills` and `~/.agents/skills` so claude/codex/opencode all
+  discover them
 - **Agent CLIs** - `claude`, `codex`, `opencode`, `pi`, plus `ccusage` for usage
   reporting across all four; pulled from nixpkgs-unstable so `nix flake update`
   tracks their release pace
