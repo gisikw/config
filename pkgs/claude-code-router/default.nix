@@ -40,6 +40,20 @@ buildNpmPackage' rec {
 
   postPatch = ''
     cp ${./package-lock.json} package-lock.json
+
+    # Anthropic's subscription credential 429s any request whose system
+    # prompt doesn't open with the Claude Code preamble, which breaks
+    # Claude Code's sidecar calls (auto-mode permission classifier etc.)
+    # when routed through ccr. Register cc-system-prefix.js as a second
+    # core gateway plugin right after upstream's header sanitizer, using
+    # the sanitizer's own path resolution with the basename swapped.
+    # The substitution targets minified names pinned to this version;
+    # --replace-fail makes a bump that breaks it fail loudly.
+    cp ${./cc-system-prefix.js} dist/main/cc-system-prefix.js
+    substituteInPlace dist/main/cli.js \
+      --replace-fail \
+        'plugins:[...a,{enabled:!0,key:qee,modulePath:mee()}]' \
+        'plugins:[...a,{enabled:!0,key:qee,modulePath:mee()},{enabled:!0,key:"ccr-cc-system-prefix",modulePath:mee().replace("upstream-header-sanitizer","cc-system-prefix")}]'
   '';
 
   npmDepsHash = "sha256-4qJIvJ7BovIn0kSO7TE+j9/LM9j1/DwG/f54MZjYRiU=";
