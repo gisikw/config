@@ -2,6 +2,7 @@
 
 {
   imports = [
+    ./claude
     ./git.nix
     ./tmux.nix
     ./herdr
@@ -13,6 +14,7 @@
     ./sway
   ] ++ lib.optionals isDarwin [
     ./darwin.nix
+    ./portal
     ./rectangle
     ./peck
   ];
