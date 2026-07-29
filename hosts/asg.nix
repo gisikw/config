@@ -3,6 +3,9 @@
 {
   # Alpine SG work laptop (aarch64-darwin).
 
+  # Container runtime — work projects expect docker; podman fills in.
+  imports = [ ../home/podman ];
+
   # Per-machine git identity; the shared config intentionally sets none.
   programs.git.settings.user = {
     name = "Kevin Gisi";
