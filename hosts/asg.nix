@@ -1,10 +1,15 @@
-{ ... }:
+{ pkgs, ... }:
 
 {
   # Alpine SG work laptop (aarch64-darwin).
 
   # Container runtime — work projects expect docker; podman fills in.
   imports = [ ../home/podman ];
+
+  # AXe drives the iOS Simulator over HID (tap/swipe/type/describe-ui);
+  # it's what the ios-loop skill (home/skills) shells out to. Darwin-only
+  # and Simulator-bound, so it stays on this host rather than in ./home.
+  home.packages = [ (import ../pkgs/axe { inherit pkgs; }) ];
 
   # Per-machine git identity; the shared config intentionally sets none.
   programs.git.settings.user = {
