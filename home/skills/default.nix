@@ -44,12 +44,39 @@ let
     hash = "sha256-RH2B03gj4kzw1j5LORezgUZPPu8mW+mWb+Kl2U7WUbY=";
   };
 
+  # Unlike the others, ios-loop is published as a bare markdown doc — no
+  # repo, and no SKILL.md frontmatter, which is what the harnesses read to
+  # discover and trigger a skill. So pin the fetch by content hash like any
+  # other source and generate the header around the doc verbatim; a CDN
+  # update is then just a hash bump.
+  iosLoopDoc = pkgs.fetchurl {
+    url = "https://cdn.gisi.network/ios-loop.md";
+    hash = "sha256-EbRTfU19HFRJCvtQvk4VODiUhLhh0brCG3dy2hIZ58Q=";
+  };
+
+  # Kept free of colons and apostrophes — it goes through an unquoted YAML
+  # scalar and a single-quoted shell echo below.
+  iosLoopDescription = "Edit-build-run-observe loop for iOS apps in the Simulator, covering xcodebuild, simctl install/launch/openurl, screenshots the agent reads back, and axe-injected taps, swipes and typing. Use when building, running, or visually verifying an iOS or React Native app on a simulator.";
+
+  iosLoop = pkgs.runCommand "ios-loop-skill" { } ''
+    mkdir -p $out
+    {
+      echo '---'
+      echo 'name: ios-loop'
+      echo 'description: ${iosLoopDescription}'
+      echo '---'
+      echo
+      cat ${iosLoopDoc}
+    } > $out/SKILL.md
+  '';
+
   # skill name -> source directory containing its SKILL.md
   skills =
     lib.genAttrs [ "allium" "distill" "elicit" "propagate" "tend" "weed" ]
       (name: "${allium}/skills/${name}")
     // {
       frontend-design = "${anthropicSkills}/skills/frontend-design";
+      ios-loop = iosLoop;
     };
 
   targets = [ ".claude/skills" ".agents/skills" ];
