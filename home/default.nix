@@ -24,6 +24,7 @@
   home.packages = with pkgs; [
     fd
     fzf
+    gh
     ripgrep
     tldr
   ];
