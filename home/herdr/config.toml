@@ -14,6 +14,21 @@ zoom = "prefix+backtick"
 goto = ["prefix+g", "prefix+backslash"]
 # f for focus (default is prefix+b).
 toggle_sidebar = "prefix+f"
+# Navigate mode: j/k walk the workspace list alongside the arrows. That
+# displaces pane down/up (herdr's defaults for j/k) onto ctrl+j/ctrl+k,
+# which is upstream's own suggested remap; h/l and the left/right arrows
+# still move between panes.
+navigate_workspace_up = ["up", "k"]
+navigate_workspace_down = ["down", "j"]
+navigate_pane_up = "ctrl+k"
+navigate_pane_down = "ctrl+j"
+# Agent panel cycling, unbound by default — the panel has no navigate-mode
+# cursor of its own, so these jump straight to an agent's pane (crossing
+# workspaces if needed). Declared prefix+ so they fire as bare a/A once
+# navigate mode is open; tab/shift+tab would be the obvious keys but are
+# reserved for pane cycling in herdr's source, ahead of any binding.
+next_agent = "prefix+a"
+previous_agent = "prefix+shift+a"
 
 [theme.custom]
 accent = "#7cd5f1"
