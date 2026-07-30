@@ -25,6 +25,7 @@
     fd
     fzf
     gh
+    jira-cli-go # binary is `jira`; acli (flake.nix) covers Confluence
     ripgrep
     tldr
   ];

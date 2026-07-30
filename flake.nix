@@ -49,9 +49,12 @@
           pkgs = nixpkgs.legacyPackages.${system};
           pkgsUnstable = import nixpkgs-unstable {
             inherit system;
-            # claude-code is the only unfree package we take.
+            # The unfree packages we take, and the only ones. acli is the
+            # same version in stable, but stable is plain legacyPackages
+            # with no config, so it comes from here where the unfree
+            # plumbing already exists.
             config.allowUnfreePredicate = pkg:
-              builtins.elem (nixpkgs.lib.getName pkg) [ "claude-code" ];
+              builtins.elem (nixpkgs.lib.getName pkg) [ "claude-code" "acli" ];
           };
 
         in home-manager.lib.homeManagerConfiguration {
@@ -93,6 +96,11 @@
                   opencode
                   pi-coding-agent
                   ccusage
+                  # Atlassian's official CLI (unfree; see the predicate
+                  # above). Multi-account auth is a global `acli auth
+                  # switch`, so day-to-day Jira goes through jira-cli-go
+                  # in ./home, which selects its tenant per invocation.
+                  acli
                 ]);
             }
           ];
