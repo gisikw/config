@@ -66,6 +66,18 @@ vim.keymap.set("n", "<leader>v", function()
   vim.diagnostic.config(new)
 end, { silent = true, noremap = true, desc = "Toggle virtual text diagnostics" })
 
+-- Open the current file in frogmouth, in the floating terminal defined below.
+-- Ctrl+q quits frogmouth; q then closes the float. It reads from disk, so
+-- this shows the last saved state, not the buffer.
+vim.keymap.set('n', '<leader>m', function()
+  local file = vim.fn.expand('%:p')
+  if file == '' then
+    vim.notify("No file to open", vim.log.levels.WARN)
+    return
+  end
+  vim.cmd('TermFloatingCmd frogmouth ' .. vim.fn.shellescape(file))
+end, { silent = true, desc = "Open current file in frogmouth" })
+
 -- Project-wide definition, rather than gd for local definition
 vim.api.nvim_set_keymap('n', 'gp', '<cmd>lua vim.lsp.buf.definition()<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>c', '<cmd>lua vim.lsp.buf.code_action()<CR>', { noremap = true, silent = true })
