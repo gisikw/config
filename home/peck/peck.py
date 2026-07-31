@@ -5,7 +5,8 @@ One global hotkey toggles recording. Audio is fed to NVIDIA Parakeet
 transcript is already caught up when you toggle off; the final text is
 then typed into the focused app as synthetic keystrokes. Shift+hotkey
 pauses/resumes the take without ending it; Ctrl+hotkey cancels it and
-discards everything.
+discards everything — including a decode already in flight, so a slow
+transcription can always be abandoned from the keyboard.
 
 Menu bar states:  ... loading   [mic] idle   [red] recording   [pause] paused
                   [pen] typing
@@ -28,6 +29,7 @@ import os
 import queue
 import threading
 import time
+import traceback
 
 import numpy as np
 import rumps
@@ -130,7 +132,12 @@ class Peck(rumps.App):
         self.recording = False
         self.paused = False
         self.discard = False
-        self.audio_q = None
+        # Bumped for every take. A session whose id no longer matches has
+        # been abandoned: it must not type its text or touch the menu bar,
+        # and it must stop pulling from a queue that now belongs to a
+        # newer take.
+        self.session = 0
+        self.pending = (0, None)
         self.stream = None
         self.start_signal = threading.Event()
 
@@ -176,15 +183,19 @@ class Peck(rumps.App):
         while True:
             self.start_signal.wait()
             self.start_signal.clear()
+            session, audio_q = self.pending
             try:
-                self.run_session(model, mx)
+                self.run_session(model, mx, session, audio_q)
+                note = f"Idle — press {KEY_LABEL} to dictate"
             except Exception:
-                import traceback
-
                 traceback.print_exc()
-                self.set_state("idle", "🎙", "Transcription failed — see peck.log")
+                note = "Transcription failed — see peck.log"
+            # The one path back to idle. Skipped if this take was already
+            # abandoned, so a straggler can't stomp on a live recording.
+            if self.session == session:
+                self.set_state("idle", "🎙", note)
 
-    def run_session(self, model, mx):
+    def run_session(self, model, mx, session, audio_q):
         sample_rate = self.sample_rate
         started = time.time()
         transcriber = model.transcribe_stream(context_size=(256, 256))
@@ -192,9 +203,13 @@ class Peck(rumps.App):
         try:
             pending = np.zeros(0, dtype=np.float32)
             duration = 0.0
-            while True:
+            # Re-checked every iteration, not just when the queue runs dry:
+            # once the decoder falls behind real time the queue always has
+            # something in it, and a cancel that waited for a timeout would
+            # first have to decode the whole backlog it is about to discard.
+            while self.session == session and not self.discard:
                 try:
-                    pending = np.concatenate([pending, self.audio_q.get(timeout=0.1)])
+                    pending = np.concatenate([pending, audio_q.get(timeout=0.1)])
                 except queue.Empty:
                     if not self.recording:
                         break
@@ -202,7 +217,7 @@ class Peck(rumps.App):
                     duration += len(pending) / sample_rate
                     transcriber.add_audio(mx.array(pending))
                     pending = np.zeros(0, dtype=np.float32)
-            if self.discard:
+            if self.discard or self.session != session:
                 text = ""
             else:
                 # Flush the remainder plus a little silence so trailing words
@@ -227,7 +242,6 @@ class Peck(rumps.App):
             self.last_text = text
             AppHelper.callAfter(self.copy_item.set_callback, self.copy_last)
             type_text(text)
-        self.set_state("idle", "🎙", f"Idle — press {KEY_LABEL} to dictate")
 
     # -- menu ----------------------------------------------------------------
 
@@ -331,24 +345,52 @@ class Peck(rumps.App):
 
     def cancel(self):
         with self.lock:
-            if self.state not in ("recording", "paused"):
-                return
-            self.discard = True
-            self.stream.stop()
-            self.stream.close()
-            self.recording = False
-            play("Basso")
-            # Blocks further presses until the engine winds down and goes idle.
-            self.set_state("transcribing", "🎙", "Discarding…")
+            if self.state in ("recording", "paused"):
+                self.discard = True
+                self.close_stream(abort=True)
+                play("Basso")
+                # Brief: the engine checks discard on every pass, so this
+                # clears as soon as the chunk in flight finishes.
+                self.set_state("transcribing", "🎙", "Discarding…")
+            elif self.state == "transcribing":
+                # Escape hatch. A decode that is merely slow still owns the
+                # engine thread, and nothing else can bring us back to idle —
+                # so orphan the take and reclaim the menu bar. The engine
+                # sees the bumped id, drops its result and re-arms.
+                self.session += 1
+                self.discard = True
+                self.close_stream(abort=True)
+                play("Basso")
+                print("session abandoned by cancel", flush=True)
+                self.set_state("idle", "🎙", f"Idle — press {KEY_LABEL} to dictate")
+
+    def close_stream(self, abort=False):
+        """Release the input stream without letting PortAudio wedge the app.
+
+        A stop() that raises — device yanked mid-take — used to leave
+        recording set and the state stuck, which no keypress could undo;
+        failing here must never cost us the path back to idle. abort()
+        drops buffered frames instead of waiting for them to drain, which
+        is what a cancel wants.
+        """
+        stream, self.stream = self.stream, None
+        self.recording = False
+        if stream is None:
+            return
+        for step in ((stream.abort if abort else stream.stop), stream.close):
+            try:
+                step()
+            except Exception:
+                traceback.print_exc()
 
     def start_recording(self):
-        self.audio_q = queue.Queue()
+        audio_q = queue.Queue()
         self.paused = False
         self.discard = False
 
         def on_audio(indata, _frames, _time, _status):
             if not self.paused:
-                self.audio_q.put(indata[:, 0].copy())
+                audio_q.put(indata[:, 0].copy())
 
         try:
             self.stream = sd.InputStream(
@@ -359,20 +401,19 @@ class Peck(rumps.App):
             )
             self.stream.start()
         except Exception:
-            import traceback
-
             traceback.print_exc()
+            self.close_stream()
             self.set_state("idle", "🎙", "Microphone unavailable — see peck.log")
             return
         self.recording = True
+        self.session += 1
+        self.pending = (self.session, audio_q)
         play("Pop")
         self.set_state("recording", "🔴", f"Recording — press {KEY_LABEL} to finish")
         self.start_signal.set()
 
     def stop_recording(self):
-        self.stream.stop()
-        self.stream.close()
-        self.recording = False
+        self.close_stream()
         play("Tink")
         self.set_state("transcribing", "✏️", "Transcribing…")
 
