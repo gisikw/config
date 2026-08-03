@@ -22,6 +22,11 @@
       ".devenv*"
       ".envrc"
       ".direnv/"
+
+      # Per-project instructions to coding agents, loaded after the repo's
+      # committed CLAUDE.md and so able to contradict it — where to say that
+      # the dev shell here is devenv, whatever the README's docker story is.
+      "CLAUDE.local.md"
     ];
 
     settings.alias = {
