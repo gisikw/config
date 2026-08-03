@@ -6,7 +6,7 @@ let
   # than exporting them from the session — any other Textual TUI is untouched.
   #   TEXTUAL_ANIMATIONS=none   scroll jumps to its destination, uneased
   #   TEXTUAL_SMOOTH_SCROLL=0   no sub-cell (pixel-level) scrolling
-  #   TEXTUAL_THEME=monokai     one of Textual's built-in themes
+  #   TEXTUAL_THEME=gruvbox     one of Textual's built-in themes
   #
   # frogmouth 0.9.1 predates Textual's theme system: it still assigns the
   # long-removed App.dark, which lands as an inert attribute here, so nothing
@@ -20,7 +20,7 @@ let
       wrapProgram $out/bin/frogmouth \
         --set TEXTUAL_ANIMATIONS none \
         --set TEXTUAL_SMOOTH_SCROLL 0 \
-        --set TEXTUAL_THEME monokai
+        --set TEXTUAL_THEME gruvbox
     '';
   };
 in
