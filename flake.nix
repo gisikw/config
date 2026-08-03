@@ -62,6 +62,10 @@
           extraSpecialArgs = {
             isDarwin = pkgs.stdenv.isDarwin;
             isLinux = pkgs.stdenv.isLinux;
+            # herdr publishes an agent skill in its own tree. Passed in
+            # rather than re-pinned in ./home so the skill and the binary
+            # move together, and so ./home keeps evaluating without it.
+            herdrSrc = herdr;
           };
           modules = [
             ./home

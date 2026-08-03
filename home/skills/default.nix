@@ -1,7 +1,8 @@
-{ lib, pkgs, ... }:
+{ lib, pkgs, herdrSrc ? null, ... }:
 
 # Agent skills, fetched from their source repos and pinned by rev +
-# content hash. Each skill folder is linked into every discovery path the
+# content hash — except herdr, which rides its flake input (see
+# herdrSkill). Each skill folder is linked into every discovery path the
 # installed harnesses read:
 #   ~/.claude/skills  — claude-code, opencode
 #   ~/.agents/skills  — codex, opencode (cross-tool convention)
@@ -70,6 +71,20 @@ let
     } > $out/SKILL.md
   '';
 
+  # herdr keeps its skill as a bare SKILL.md at the root of its own tree,
+  # not in a directory of its own, so lift the one file out — pointing at
+  # the source would link the whole herdr checkout into the skills dirs.
+  # The skills under its .agents/ are for working on herdr itself.
+  #
+  # Source is the flake input rather than a rev pinned here, so a
+  # `nix flake update` moves the skill and the binary together. Worth the
+  # extraSpecialArgs plumbing: the skill drives the CLI, and treats the
+  # installed binary as the authority for command syntax.
+  herdrSkill = pkgs.runCommand "herdr-skill" { } ''
+    mkdir -p $out
+    cp ${herdrSrc}/SKILL.md $out/SKILL.md
+  '';
+
   # skill name -> source directory containing its SKILL.md
   skills =
     lib.genAttrs [ "allium" "distill" "elicit" "propagate" "tend" "weed" ]
@@ -77,7 +92,9 @@ let
     // {
       frontend-design = "${anthropicSkills}/skills/frontend-design";
       ios-loop = iosLoop;
-    };
+    }
+    # Absent when ./home is used as a module from a flake without the input.
+    // lib.optionalAttrs (herdrSrc != null) { herdr = herdrSkill; };
 
   targets = [ ".claude/skills" ".agents/skills" ];
 in {
