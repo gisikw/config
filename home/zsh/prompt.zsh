@@ -20,8 +20,16 @@ function status_prompt() {
     JOBS_SEGMENT=""
   fi
 
+  # Slabs are dark fills (readable as background); the chevron keeps the
+  # plain ANSI status color, which is tuned to read as foreground.
+  case "$STATUS" in
+    green)  SLAB="#2a4c37"; SLABTXT="#cfe4d5" ;;
+    yellow) SLAB="#593d24"; SLABTXT="#eddaca" ;;
+    red)    SLAB="#5e3836"; SLABTXT="#f2d7d5" ;;
+  esac
+
   NEWLINE=$'\n'
-  PROMPT="%K{$STATUS}%F{black} $CONTEXT %F{$STATUS}%k${NEWLINE}%F{$STATUS}${JOBS_SEGMENT}❯%f "
+  PROMPT="%K{$SLAB}%F{$SLABTXT} $CONTEXT %f%k${NEWLINE}%F{$STATUS}${JOBS_SEGMENT}❯%f "
 }
 
 precmd() { status_prompt; }
