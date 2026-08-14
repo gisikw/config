@@ -1,0 +1,28 @@
+# lectern — brown leather.
+
+background = #392a22
+foreground = #ddd3c7
+cursor-color = #df8623
+cursor-text = #291c16
+selection-background = #334a62
+selection-foreground = #f5ecdd
+
+# normal
+palette = 0=#655851
+palette = 1=#e26b6a
+palette = 2=#61ab7c
+palette = 3=#dd8e42
+palette = 4=#6299d1
+palette = 5=#bd78ae
+palette = 6=#58a8b1
+palette = 7=#ddd3c7
+
+# bright
+palette = 8=#948a83
+palette = 9=#ff928f
+palette = 10=#8acaa0
+palette = 11=#f8b171
+palette = 12=#8abbed
+palette = 13=#dc9dce
+palette = 14=#83c8d0
+palette = 15=#f5ecdd

@@ -184,7 +184,9 @@ require("lazy").setup({
       "loctvl842/monokai-pro.nvim",
       config = function()
         require("monokai-pro").setup()
-        vim.cmd.colorscheme("monokai-pro-machine")
+        -- Trialing lectern (colors/lectern.lua) against monokai
+        -- vim.cmd.colorscheme("monokai-pro-machine")
+        vim.cmd.colorscheme("lectern")
       end
     },
     {
@@ -408,8 +410,11 @@ require("lazy").setup({
       "nvimdev/indentmini.nvim",
       config = function()
         require("indentmini").setup({ char = "┋" })
-        vim.api.nvim_set_hl(0, "IndentLine", { ctermfg = 252, ctermbg = "NONE", fg = "#545f62", bg = "NONE" })
-        vim.api.nvim_set_hl(0, "IndentLineCurrent", { ctermfg = 252, ctermbg = "NONE", fg = "#b8c4c3", bg = "NONE" })
+        -- These blue-grays suit monokai; lectern defines its own.
+        if vim.g.colors_name ~= "lectern" then
+          vim.api.nvim_set_hl(0, "IndentLine", { ctermfg = 252, ctermbg = "NONE", fg = "#545f62", bg = "NONE" })
+          vim.api.nvim_set_hl(0, "IndentLineCurrent", { ctermfg = 252, ctermbg = "NONE", fg = "#b8c4c3", bg = "NONE" })
+        end
       end,
     },
     { "lewis6991/gitsigns.nvim", opts = {} },
