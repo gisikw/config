@@ -1,7 +1,7 @@
 font-family = "ProggyClean Nerd Font"
 font-size = 18
-# theme = "Monokai Pro Spectrum"
-theme = lectern
+theme = "Monokai Pro Spectrum"
+# theme = lectern
 
 # Bind alt/opt+backspace to wordwise backspace
 keybind = alt+backspace=text:\x17

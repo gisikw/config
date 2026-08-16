@@ -184,9 +184,9 @@ require("lazy").setup({
       "loctvl842/monokai-pro.nvim",
       config = function()
         require("monokai-pro").setup()
-        -- Trialing lectern (colors/lectern.lua) against monokai
-        -- vim.cmd.colorscheme("monokai-pro-machine")
-        vim.cmd.colorscheme("lectern")
+        -- lectern (colors/lectern.lua) is the in-house alternative
+        vim.cmd.colorscheme("monokai-pro-machine")
+        -- vim.cmd.colorscheme("lectern")
       end
     },
     {

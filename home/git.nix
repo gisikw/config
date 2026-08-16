@@ -27,6 +27,9 @@
       # committed CLAUDE.md and so able to contradict it — where to say that
       # the dev shell here is devenv, whatever the README's docker story is.
       "CLAUDE.local.md"
+
+      # Scratch space for whatever detritus a repo accumulates locally.
+      ".local"
     ];
 
     settings.alias = {
