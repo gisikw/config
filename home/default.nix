@@ -27,6 +27,7 @@ in
 {
   imports = [
     ./claude
+    ./gcloud.nix
     ./git.nix
     ./tmux.nix
     ./herdr
