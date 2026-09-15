@@ -41,3 +41,9 @@ surface_dim = "#3a4449"
 
 [ui]
 agent_panel_sort = "spaces"
+
+[experimental]
+# Required by the herdr-browser plugin (see default.nix): the Chromium
+# screencast reaches the pane as kitty graphics, rendered by whichever
+# terminal the client is attached in. Ghostty speaks the protocol.
+kitty_graphics = true

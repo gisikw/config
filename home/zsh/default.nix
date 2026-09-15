@@ -8,6 +8,7 @@
       ./prompt.zsh
       ./config.zsh
       ./transfer.zsh
+      ./aisg.zsh
     ];
   };
 }

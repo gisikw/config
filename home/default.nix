@@ -52,6 +52,7 @@ in
     fzf
     gh
     jira-cli-go # binary is `jira`; acli (flake.nix) covers Confluence
+    jq # activation scripts pin their own; this one is for aisg + the shell
     ripgrep
     tldr
   ]) ++ [

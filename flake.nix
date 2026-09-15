@@ -12,8 +12,18 @@
     };
     # Terminal agent multiplexer (https://herdr.dev). Not in nixpkgs;
     # intentionally does not follow our nixpkgs — it builds with its own
-    # pinned toolchain (rust-overlay).
-    herdr.url = "github:ogulcancelik/herdr";
+    # pinned toolchain (rust-overlay). Pinned by release tag; bump the tag
+    # to upgrade.
+    herdr.url = "github:ogulcancelik/herdr/v0.9.0";
+    # Chromium-in-a-pane plugin for herdr, plus its agent skill. Not a
+    # flake, and not built: a tree of dependency-free TypeScript that bun
+    # runs in place. Its manifest pins a min_herdr_version, so it is an
+    # input of its own rather than a rev here — `nix flake update` then
+    # moves it in step with herdr.
+    herdr-browser = {
+      url = "github:ogulcancelik/herdr-browser";
+      flake = false;
+    };
     # Open Design (https://open-design.ai) — local-first design tool
     # driven by the agent CLIs on PATH. Ships its own home-manager
     # module; like herdr it builds against its own pinned nixpkgs.
@@ -21,7 +31,8 @@
     open-design.url = "github:nexu-io/open-design";
   };
 
-  outputs = { nixpkgs, nixpkgs-unstable, home-manager, herdr, open-design, ... }:
+  outputs = { nixpkgs, nixpkgs-unstable, home-manager, herdr, herdr-browser
+            , open-design, ... }:
     let
       # One entry per machine, keyed "user@hostname" so that
       # `home-manager switch --flake <repo>` resolves the right config
@@ -66,6 +77,9 @@
             # rather than re-pinned in ./home so the skill and the binary
             # move together, and so ./home keeps evaluating without it.
             herdrSrc = herdr;
+            # Likewise for the herdr-browser plugin: ./home registers it
+            # with herdr and lifts its skill out, but neither pins it.
+            herdrBrowserSrc = herdr-browser;
           };
           modules = [
             ./home
@@ -91,11 +105,16 @@
 
               # Flake-input packages live here rather than in ./home so that
               # homeManagerModules.default stays usable from other flakes.
-              home.packages = [ herdr.packages.${system}.default ]
+              home.packages = [
+                herdr.packages.${system}.default
+                # claude-code is vendored (see pkgs/claude-code) so bumps
+                # don't wait on nixpkgs. Built with pkgsUnstable for its
+                # allowUnfreePredicate — the stable pkgs has no config.
+                (import ./pkgs/claude-code { pkgs = pkgsUnstable; })
+              ]
                 # Agent CLIs + ccusage (usage reporting; reads each agent's
                 # default log dirs, so no per-tool config is needed).
                 ++ (with pkgsUnstable; [
-                  claude-code
                   codex
                   opencode
                   pi-coding-agent

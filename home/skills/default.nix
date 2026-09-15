@@ -1,8 +1,8 @@
-{ lib, pkgs, herdrSrc ? null, ... }:
+{ lib, pkgs, herdrSrc ? null, herdrBrowserSrc ? null, ... }:
 
 # Agent skills, fetched from their source repos and pinned by rev +
-# content hash — except herdr, which rides its flake input (see
-# herdrSkill). Each skill folder is linked into every discovery path the
+# content hash — except the two herdr ones, which ride their flake inputs
+# (see herdrSkill). Each skill folder is linked into every discovery path the
 # installed harnesses read:
 #   ~/.claude/skills  — claude-code, opencode
 #   ~/.agents/skills  — codex, opencode (cross-tool convention)
@@ -71,8 +71,8 @@ let
     } > $out/SKILL.md
   '';
 
-  # herdr keeps its skill as a bare SKILL.md at the root of its own tree,
-  # not in a directory of its own, so lift the one file out — pointing at
+  # herdr keeps its user-facing skill at skills/herdr/ (it moved there from
+  # a bare root SKILL.md in Aug 2026); lift the one file out — pointing at
   # the source would link the whole herdr checkout into the skills dirs.
   # The skills under its .agents/ are for working on herdr itself.
   #
@@ -82,7 +82,7 @@ let
   # installed binary as the authority for command syntax.
   herdrSkill = pkgs.runCommand "herdr-skill" { } ''
     mkdir -p $out
-    cp ${herdrSrc}/SKILL.md $out/SKILL.md
+    cp ${herdrSrc}/skills/herdr/SKILL.md $out/SKILL.md
   '';
 
   # skill name -> source directory containing its SKILL.md
@@ -94,7 +94,12 @@ let
       ios-loop = iosLoop;
     }
     # Absent when ./home is used as a module from a flake without the input.
-    // lib.optionalAttrs (herdrSrc != null) { herdr = herdrSkill; };
+    // lib.optionalAttrs (herdrSrc != null) { herdr = herdrSkill; }
+    # Unlike herdr's own, this one sits in a directory already, so it needs
+    # no lifting. Same input as the plugin it documents (see home/herdr).
+    // lib.optionalAttrs (herdrBrowserSrc != null) {
+      herdr-browser = "${herdrBrowserSrc}/skills/herdr-browser";
+    };
 
   targets = [ ".claude/skills" ".agents/skills" ];
 in {
