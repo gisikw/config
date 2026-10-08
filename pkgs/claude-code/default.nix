@@ -10,16 +10,16 @@
 { pkgs }:
 
 let
-  version = "2.1.270";
+  version = "2.1.293";
 
   sources = {
     x86_64-linux = {
       url = "https://registry.npmjs.org/@anthropic-ai/claude-code-linux-x64/-/claude-code-linux-x64-${version}.tgz";
-      hash = "sha256-iKYt3fl6Zzi3kkJjBa9ggpNdONu1Sj4kopAXFjznkQk=";
+      hash = "sha256-u9Bsu1ZDx4tu3L7X3Z67hHJ7XvcXXizE2H2t7L6c5fo=";
     };
     aarch64-darwin = {
       url = "https://registry.npmjs.org/@anthropic-ai/claude-code-darwin-arm64/-/claude-code-darwin-arm64-${version}.tgz";
-      hash = "sha256-DQIGtFh3eQTtGMYlA00RIOQBvy5wwDQyEeY0yg/pGCM=";
+      hash = "sha256-E8MUUald0drvZCNiUrVIEMuwlIy+ShzVES2sJoXVA7g=";
     };
   };
 
