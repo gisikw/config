@@ -14,6 +14,11 @@ stty icrnl
 # Vi mode with history search
 bindkey -v
 bindkey '^R' history-incremental-search-backward
+# Home/End in vi mode (both keymaps; CSI, SS3 and tmux/linux-console forms)
+for km in viins vicmd; do
+  bindkey -M $km '^[[H' beginning-of-line '^[OH' beginning-of-line '^[[1~' beginning-of-line
+  bindkey -M $km '^[[F' end-of-line       '^[OF' end-of-line       '^[[4~' end-of-line
+done
 
 # Completion
 autoload -Uz compinit && compinit
