@@ -55,76 +55,87 @@
         };
       };
 
-      mkHome = { system, username, module }:
-        let
-          pkgs = nixpkgs.legacyPackages.${system};
-          pkgsUnstable = import nixpkgs-unstable {
-            inherit system;
-            # The unfree packages we take, and the only ones. acli is the
-            # same version in stable, but stable is plain legacyPackages
-            # with no config, so it comes from here where the unfree
-            # plumbing already exists.
-            config.allowUnfreePredicate = pkg:
-              builtins.elem (nixpkgs.lib.getName pkg) [ "claude-code" "acli" ];
-          };
+      # Unstable, with the unfree packages we take (and only those). acli
+      # is the same version in stable, but stable is plain legacyPackages
+      # with no config, so it comes from here where the unfree plumbing
+      # already exists. On Linux acli is a wrapper around acli-unwrapped,
+      # which carries the unfree license itself, so both names are listed.
+      pkgsUnstableFor = system: import nixpkgs-unstable {
+        inherit system;
+        config.allowUnfreePredicate = pkg:
+          builtins.elem (nixpkgs.lib.getName pkg) [ "claude-code" "acli" "acli-unwrapped" ];
+      };
 
-        in home-manager.lib.homeManagerConfiguration {
+      specialArgsFor = system:
+        let isDarwin = nixpkgs.lib.hasSuffix "darwin" system; in {
+          inherit isDarwin;
+          isLinux = !isDarwin;
+          # herdr publishes an agent skill in its own tree. Passed in
+          # rather than re-pinned in ./home so the skill and the binary
+          # move together, and so ./home keeps evaluating without it.
+          herdrSrc = herdr;
+          # Likewise for the herdr-browser plugin: ./home registers it
+          # with herdr and lifts its skill out, but neither pins it.
+          herdrBrowserSrc = herdr-browser;
+        };
+
+      # Everything a machine's home gets, wherever home-manager runs:
+      # standalone (homeConfigurations, below) or inside a NixOS system
+      # (lib.nixosHome, for fort-nix/homestead). One source either way.
+      sharedModulesFor = system:
+        let pkgsUnstable = pkgsUnstableFor system; in [
+          ./home
+          open-design.homeManagerModules.default
+          ({ pkgs, ... }: {
+            # Upstream's daemon build lists the node-gyp toolchain
+            # (python3/gnumake/pkg-config) but misses Apple libtool,
+            # which the better-sqlite3 static-archive step needs on
+            # darwin. Graft cctools in until fixed upstream.
+            services.open-design.package =
+              nixpkgs.lib.mkIf pkgs.stdenv.isDarwin
+                (open-design.packages.${system}.daemon.overrideAttrs (old: {
+                  nativeBuildInputs = old.nativeBuildInputs ++ [ pkgs.cctools ];
+                }));
+          })
+          {
+            # Flake-input packages live here rather than in ./home so that
+            # homeManagerModules.default stays usable from other flakes.
+            home.packages = [
+              herdr.packages.${system}.default
+              # claude-code is vendored (see pkgs/claude-code) so bumps
+              # don't wait on nixpkgs. Built with pkgsUnstable for its
+              # allowUnfreePredicate — the stable pkgs has no config.
+              (import ./pkgs/claude-code { pkgs = pkgsUnstable; })
+            ]
+              # Agent CLIs + ccusage (usage reporting; reads each agent's
+              # default log dirs, so no per-tool config is needed).
+              ++ (with pkgsUnstable; [
+                codex
+                opencode
+                pi-coding-agent
+                ccusage
+                # Atlassian's official CLI (unfree; see the predicate
+                # above). Multi-account auth is a global `acli auth
+                # switch`, so day-to-day Jira goes through jira-cli-go
+                # in ./home, which selects its tenant per invocation.
+                acli
+              ]);
+          }
+        ];
+
+      mkHome = { system, username, module }:
+        let pkgs = nixpkgs.legacyPackages.${system}; in
+        home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
-          extraSpecialArgs = {
-            isDarwin = pkgs.stdenv.isDarwin;
-            isLinux = pkgs.stdenv.isLinux;
-            # herdr publishes an agent skill in its own tree. Passed in
-            # rather than re-pinned in ./home so the skill and the binary
-            # move together, and so ./home keeps evaluating without it.
-            herdrSrc = herdr;
-            # Likewise for the herdr-browser plugin: ./home registers it
-            # with herdr and lifts its skill out, but neither pins it.
-            herdrBrowserSrc = herdr-browser;
-          };
-          modules = [
-            ./home
-            open-design.homeManagerModules.default
+          extraSpecialArgs = specialArgsFor system;
+          modules = sharedModulesFor system ++ [
             module
-            {
-              # Upstream's daemon build lists the node-gyp toolchain
-              # (python3/gnumake/pkg-config) but misses Apple libtool,
-              # which the better-sqlite3 static-archive step needs on
-              # darwin. Graft cctools in until fixed upstream.
-              services.open-design.package =
-                nixpkgs.lib.mkIf pkgs.stdenv.isDarwin
-                  (open-design.packages.${system}.daemon.overrideAttrs (old: {
-                    nativeBuildInputs = old.nativeBuildInputs ++ [ pkgs.cctools ];
-                  }));
-            }
             {
               home.username = username;
               home.homeDirectory =
                 if pkgs.stdenv.isDarwin
                 then "/Users/${username}"
                 else "/home/${username}";
-
-              # Flake-input packages live here rather than in ./home so that
-              # homeManagerModules.default stays usable from other flakes.
-              home.packages = [
-                herdr.packages.${system}.default
-                # claude-code is vendored (see pkgs/claude-code) so bumps
-                # don't wait on nixpkgs. Built with pkgsUnstable for its
-                # allowUnfreePredicate — the stable pkgs has no config.
-                (import ./pkgs/claude-code { pkgs = pkgsUnstable; })
-              ]
-                # Agent CLIs + ccusage (usage reporting; reads each agent's
-                # default log dirs, so no per-tool config is needed).
-                ++ (with pkgsUnstable; [
-                  codex
-                  opencode
-                  pi-coding-agent
-                  ccusage
-                  # Atlassian's official CLI (unfree; see the predicate
-                  # above). Multi-account auth is a global `acli auth
-                  # switch`, so day-to-day Jira goes through jira-cli-go
-                  # in ./home, which selects its tenant per invocation.
-                  acli
-                ]);
             }
           ];
         };
@@ -132,5 +143,26 @@
       homeConfigurations = builtins.mapAttrs (_: mkHome) hosts;
 
       homeManagerModules.default = import ./home;
+
+      # A NixOS module that gives `username` this repo's home, managed by
+      # the system (so `nixos-rebuild` applies it; no separate switch).
+      # Used by fort-nix/homestead:
+      #   (config.lib.nixosHome { username = "kevin"; module = config + "/hosts/brain.nix"; })
+      # The system's nixpkgs is used (useGlobalPkgs), so the consumer
+      # should make this flake's nixpkgs follow its own.
+      lib.nixosHome = { username, module ? { } }:
+        { pkgs, ... }:
+        let system = pkgs.stdenv.hostPlatform.system; in {
+          imports = [ home-manager.nixosModules.home-manager ];
+          home-manager = {
+            useGlobalPkgs = true;
+            useUserPackages = true;
+            # A first activation over hand-made dotfiles moves them
+            # aside instead of failing.
+            backupFileExtension = "hm-bak";
+            extraSpecialArgs = specialArgsFor system;
+            users.${username}.imports = sharedModulesFor system ++ [ module ];
+          };
+        };
     };
 }

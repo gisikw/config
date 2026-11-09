@@ -35,6 +35,7 @@ in
     ./neovim
     ./zsh
     ./ghostty
+    ./deskflow.nix
   ] ++ lib.optionals isLinux [
     ./sway
   ] ++ lib.optionals isDarwin [
