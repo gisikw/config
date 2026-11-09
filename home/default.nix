@@ -42,7 +42,7 @@ in
     ./darwin.nix
     ./portal
     ./rectangle
-    ./peck
+    ./launchd-bootout.nix
   ];
 
   home.stateVersion = "26.05";
